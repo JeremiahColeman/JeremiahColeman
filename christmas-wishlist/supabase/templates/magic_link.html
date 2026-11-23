@@ -1,0 +1,16 @@
+<!doctype html>
+<html>
+  <body style="margin:0;padding:24px;background:#fbf7f0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#1f2a24;">
+    <div style="max-width:480px;margin:0 auto;background:#ffffff;border-radius:16px;padding:32px;">
+      <h1 style="font-size:24px;margin:0 0 16px;">Sign in to Family Wishlist</h1>
+      <p style="font-size:18px;line-height:1.5;margin:0 0 24px;">Tap the button to sign in. This link works once and expires in an hour.</p>
+      <p style="margin:0 0 32px;">
+        <a href="{{ .RedirectTo }}&token_hash={{ .TokenHash }}&type=email"
+           style="display:inline-block;background:#1f5135;color:#ffffff;font-size:20px;font-weight:600;text-decoration:none;padding:16px 28px;border-radius:12px;">Sign in</a>
+      </p>
+      <p style="font-size:18px;line-height:1.5;margin:0 0 8px;">Or type this code on the sign-in screen:</p>
+      <p style="font-size:32px;font-weight:700;letter-spacing:6px;margin:0 0 24px;">{{ .Token }}</p>
+      <p style="font-size:14px;color:#5b6660;margin:0;">If you didn't ask to sign in, you can ignore this email.</p>
+    </div>
+  </body>
+</html>

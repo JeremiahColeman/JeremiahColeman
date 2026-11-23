@@ -12,7 +12,7 @@ Auth, Realtime) through `@supabase/ssr`, hosted on Vercel.
 | Step | What | Status |
 |---|---|---|
 | 1 | Scaffold, schema, RLS, triggers, functions, RLS tests | Done |
-| 2 | Auth, profiles, join flow | Not started |
+| 2 | Auth, profiles, join flow | Done |
 | 3 | Owner list editor, link autofill | Not started |
 | 4 | Buyer view, claims, Realtime | Not started |
 | 5 | My shopping, gift reveal | Not started |
@@ -69,16 +69,38 @@ These close leaks the spec didn't call out:
 - Lowering a claim's quantity, or changing only its status or share toggle, is
   always allowed, even if the owner later lowered the wanted quantity.
 
+## Sign-in and joining
+
+- **Email sign-in, no passwords.** The email has a button *and* a 6-digit
+  code. The button works on any device (it uses a token hash, not a PKCE
+  cookie), so a relative can ask on a laptop and tap the link on a phone. The
+  code is a fallback for people who'd rather type it.
+- **Google sign-in** is optional. It shows only when
+  `NEXT_PUBLIC_GOOGLE_SIGN_IN=true`.
+- **First sign-in asks for a display name.** Google users get their Google name
+  automatically and can change it under Account.
+- **`/join/[token]`** sends you to sign in if needed, then to the name step,
+  then joins the list and opens it. An owner opening their own link lands on
+  their list with a note. Bad or rotated links show a friendly message.
+- **Redirects after sign-in** go only to paths on this site, so an off-site
+  `next` value is ignored.
+
+Signed-in pages render a static shell (nav and a loading placeholder) right
+away, then stream in the user's data. The server Supabase client calls
+`connection()`, so per-user data is never prerendered or cached on the server.
+
 ## Local development
 
 Requirements: Node 22+, Docker.
 
 ```bash
 npm install
-npx supabase start        # starts Postgres, Auth, Realtime locally
-cp .env.example .env.local # then fill in the anon key from `npx supabase status`
+npx supabase start   # Postgres, Auth, Realtime, and a mail catcher
+npm run env:local    # writes .env.local with the local URL and anon key
 npm run dev
 ```
+
+Sign-in emails go to the local mail catcher at http://127.0.0.1:54324.
 
 If image pulls from `public.ecr.aws` hit a rate limit, pull from Docker Hub
 instead: `SUPABASE_INTERNAL_IMAGE_REGISTRY=docker.io npx supabase start`.
@@ -87,14 +109,34 @@ instead: `SUPABASE_INTERNAL_IMAGE_REGISTRY=docker.io npx supabase start`.
 
 ```bash
 npx supabase db reset  # optional: start from a clean database
-npm run test:rls
+npm run test:rls       # database privacy tests (Vitest)
+npm run test:e2e       # browser tests at an iPhone size (Playwright)
 ```
+
+The browser tests build and start the app on port 3000 (or reuse a running
+server) and read sign-in emails from the local mail catcher.
 
 The RLS tests run against the local stack through the same REST and Realtime
 APIs the app uses. They read keys from `supabase status` at runtime, so no keys
 are committed. They use four users: owner A, buyers B and C, and outsider D. A
 direct Postgres connection is used only to simulate time passing for the gift
 reveal and to prove the overclaim lock blocks a concurrent transaction.
+
+## Hosted Supabase settings for sign-in
+
+When you set up the hosted project:
+
+1. **Authentication → URL Configuration:** set the Site URL to the production
+   domain, and add redirect URLs that end in `/**` for production, Vercel
+   previews, and local, for example `https://your-domain.com/**`. Without the
+   `/**`, sign-in links fall back to the Site URL and break.
+2. **Authentication → Email Templates:** paste
+   [`supabase/templates/magic_link.html`](supabase/templates/magic_link.html)
+   into **Magic Link** and
+   [`supabase/templates/confirmation.html`](supabase/templates/confirmation.html)
+   into **Confirm signup**.
+3. **Authentication → Providers → Google** (optional): turn it on, then set
+   `NEXT_PUBLIC_GOOGLE_SIGN_IN=true` in Vercel.
 
 ## Known limits
 
