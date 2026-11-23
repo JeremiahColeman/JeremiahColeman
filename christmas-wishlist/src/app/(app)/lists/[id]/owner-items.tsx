@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { ItemCard, type ItemView } from "@/components/item-card";
 import { SubmitButton } from "@/components/submit-button";
 import { Button, buttonClass } from "@/components/ui";
@@ -71,11 +71,16 @@ export function OwnerItem({
   item,
   isFirst,
   isLast,
+  badge,
+  claim,
 }: {
   listId: string;
   item: ItemView;
   isFirst: boolean;
   isLast: boolean;
+  /** Managed lists only: status chip and the owner's own claim controls. */
+  badge?: ReactNode;
+  claim?: ReactNode;
 }) {
   const [editing, setEditing] = useState(false);
 
@@ -95,7 +100,8 @@ export function OwnerItem({
   }
 
   return (
-    <ItemCard item={item}>
+    <ItemCard item={item} badge={badge}>
+      {claim ? <div className="mb-4 border-b border-line pb-4">{claim}</div> : null}
       <div className="grid grid-cols-[3.25rem_3.25rem_minmax(0,1fr)_minmax(0,1fr)] gap-2">
         <MoveButton listId={listId} itemId={item.id} direction="up" title={item.title} disabled={isFirst} />
         <MoveButton listId={listId} itemId={item.id} direction="down" title={item.title} disabled={isLast} />

@@ -64,7 +64,7 @@ test.describe("sign in, profile, and join", () => {
     await page.getByLabel("This list is for someone else").check();
     await page.getByLabel("Who is it for?").fill("Rex");
     await page.getByRole("button", { name: "Create list" }).click();
-    await expect(page.getByText("For Rex")).toBeVisible();
+    await expect(page.getByText("For Rex", { exact: true })).toBeVisible();
     await expect(page.getByText("Reservations are hidden from you")).toHaveCount(0);
     const invite = await page.getByLabel("Invite link").inputValue();
 

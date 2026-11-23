@@ -14,7 +14,7 @@ Auth, Realtime) through `@supabase/ssr`, hosted on Vercel.
 | 1 | Scaffold, schema, RLS, triggers, functions, RLS tests | Done |
 | 2 | Auth, profiles, join flow | Done |
 | 3 | Owner list editor, link autofill | Done |
-| 4 | Buyer view, claims, Realtime | Not started |
+| 4 | Buyer view, claims, Realtime | Done |
 | 5 | My shopping, gift reveal | Not started |
 | 6 | PWA polish, Vercel deploy | Not started |
 
@@ -99,6 +99,25 @@ These close leaks the spec didn't call out:
 - See who joined, and remove someone.
 - Edit the list's name, description, date, or recipient; archive; or delete.
 - Owners never see claim information on their own lists.
+
+## Buyer view and reservations
+
+- Each item shows **Available**, **Reserved**, **Purchased**, or a count like
+  **2 of 3 taken**. Never who.
+- Buttons: **Reserve** (choose how many when more than one is left), **I already
+  bought it**, and on your own claim **Mark as purchased** / **Not bought
+  yet**, **Change amount**, and **Unreserve**. Your claims say
+  "You reserved this" or "You bought this".
+- If someone else got there first, you get a plain message and the item
+  updates. The database's overclaim lock is the real guard.
+- On a list made for someone else, the owner sees the same statuses and can
+  reserve, but still never sees names.
+- **Live updates:** the page subscribes to Realtime changes on `items` and
+  `item_claim_totals` for that list. RLS decides which events each person
+  gets, so an owner gets no claim events on their own list (the owner's view
+  doesn't even subscribe). The page also catches up when the subscription
+  connects or reconnects, and when you come back to the tab, so nothing made
+  in between is missed.
 
 ## Link autofill (`/api/unfurl?url=`)
 

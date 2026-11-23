@@ -1,8 +1,11 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { ClaimPanel, StatusChip } from "@/components/claims/claim-panel";
+import { LiveTotalsProvider } from "@/components/claims/live-totals";
 import { ItemCard, type ItemView } from "@/components/item-card";
 import { Card, Notice, PageTitle } from "@/components/ui";
 import { requestOrigin, requireProfile } from "@/lib/auth";
+import type { MyClaim, Totals } from "@/lib/claims";
 import { formatDate, recipientOf } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
 import { ListSettings } from "./list-settings";
@@ -64,19 +67,45 @@ export default async function ListPage({ params, searchParams }: PageProps<"/lis
     </>
   );
 
+  // Claim data is loaded only where the viewer may see it: always for
+  // members, and for the owner only on a managed list. (RLS enforces the same
+  // rule; this just avoids asking.)
+  const seesClaims = !isOwner || !list.recipient_is_owner;
+  let totals: Totals[] = [];
+  const myClaims: Record<string, MyClaim> = {};
+  if (seesClaims && live.length) {
+    const itemIds = live.map((i) => i.id);
+    const [{ data: totalRows }, { data: claimRows }] = await Promise.all([
+      supabase.from("item_claim_totals").select("item_id, reserved_qty, purchased_qty, updated_at").eq("list_id", id),
+      supabase.from("claims").select("id, item_id, quantity, status").eq("claimer_id", user.id).in("item_id", itemIds),
+    ]);
+    totals = totalRows ?? [];
+    for (const c of claimRows ?? []) myClaims[c.item_id] = c as MyClaim;
+  }
+
   if (!isOwner) {
     return (
       <>
         {header}
-        <div className="space-y-4">
-          {live.length === 0 ? (
-            <Card>
-              <p className="text-muted">Nothing on this list yet. Check back soon.</p>
-            </Card>
-          ) : (
-            live.map((item) => <ItemCard key={item.id} item={item} />)
-          )}
-        </div>
+        <LiveTotalsProvider listId={list.id} initial={totals}>
+          <div className="space-y-4">
+            {live.length === 0 ? (
+              <Card>
+                <p className="text-muted">Nothing on this list yet. Check back soon.</p>
+              </Card>
+            ) : (
+              live.map((item) => (
+                <ItemCard
+                  key={item.id}
+                  item={item}
+                  badge={<StatusChip itemId={item.id} wanted={item.quantity_wanted} />}
+                >
+                  <ClaimPanel listId={list.id} item={item} myClaim={myClaims[item.id]} />
+                </ItemCard>
+              ))
+            )}
+          </div>
+        </LiveTotalsProvider>
       </>
     );
   }
@@ -97,15 +126,38 @@ export default async function ListPage({ params, searchParams }: PageProps<"/lis
         ) : null}
         {list.recipient_is_owner ? (
           <Notice>Reservations are hidden from you, so your gifts stay a surprise.</Notice>
-        ) : null}
+        ) : (
+          <Notice>
+            You made this list for {list.recipient_name}, so you can see what&apos;s taken and reserve gifts too. You
+            won&apos;t see who reserved what.
+          </Notice>
+        )}
 
         <AddItem listId={list.id} startOpen={live.length === 0} />
 
         {live.length ? (
           <section aria-label="Items" className="space-y-4">
-            {live.map((item, i) => (
-              <OwnerItem key={item.id} listId={list.id} item={item} isFirst={i === 0} isLast={i === live.length - 1} />
-            ))}
+            {list.recipient_is_owner ? (
+              // The owner is the recipient: no claim information at all.
+              live.map((item, i) => (
+                <OwnerItem key={item.id} listId={list.id} item={item} isFirst={i === 0} isLast={i === live.length - 1} />
+              ))
+            ) : (
+              // Managed list: the owner shops like a buyer (counts, never names).
+              <LiveTotalsProvider listId={list.id} initial={totals}>
+                {live.map((item, i) => (
+                  <OwnerItem
+                    key={item.id}
+                    listId={list.id}
+                    item={item}
+                    isFirst={i === 0}
+                    isLast={i === live.length - 1}
+                    badge={<StatusChip itemId={item.id} wanted={item.quantity_wanted} />}
+                    claim={<ClaimPanel listId={list.id} item={item} myClaim={myClaims[item.id]} />}
+                  />
+                ))}
+              </LiveTotalsProvider>
+            )}
           </section>
         ) : null}
 

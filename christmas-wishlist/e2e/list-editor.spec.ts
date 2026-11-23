@@ -179,7 +179,7 @@ test.describe("owner list editor", () => {
     await settings.getByLabel("Description (optional)").fill("Squeaky things, please.");
     await settings.getByRole("button", { name: "Save", exact: true }).click();
     await expect(page.getByRole("heading", { name: "Rex's stocking", level: 1 })).toBeVisible();
-    await expect(page.getByText("For Rex the dog")).toBeVisible();
+    await expect(page.getByText("For Rex the dog", { exact: true })).toBeVisible();
     await expect(page.getByText("Squeaky things, please.")).toBeVisible();
 
     await page.getByRole("button", { name: "Archive list" }).click();
