@@ -15,7 +15,7 @@ Auth, Realtime) through `@supabase/ssr`, hosted on Vercel.
 | 2 | Auth, profiles, join flow | Done |
 | 3 | Owner list editor, link autofill | Done |
 | 4 | Buyer view, claims, Realtime | Done |
-| 5 | My shopping, gift reveal | Not started |
+| 5 | My shopping, gift reveal | Done |
 | 6 | PWA polish, Vercel deploy | Not started |
 
 ## Privacy model
@@ -119,6 +119,30 @@ These close leaks the spec didn't call out:
   connects or reconnects, and when you come back to the tab, so nothing made
   in between is missed.
 
+## My shopping
+
+All your reservations across lists, grouped by who they're for:
+
+- **Totals:** "Still to buy" and "Bought", overall and per person (items
+  without a price are counted separately).
+- **Flags:** items the owner removed after you reserved them, and items whose
+  details (price, link, notes, quantity, name, picture) changed. Reordering
+  doesn't count as a change.
+- **Actions:** Mark as purchased / Not bought yet, and Unreserve. If the item
+  was removed or you left the list, the claim can only be removed.
+- **"Share my name for thank-you notes"**: shown only on lists where the
+  recipient is the owner, since only those have a gift reveal.
+
+## Gift reveal
+
+On their own lists, the owner sees a "Gift reveal" card. It opens the day
+after the event date (UTC) and shows the items marked as bought, with how many,
+and "From …" only for givers who turned on "Share my name". Reserved-but-not-
+bought items aren't shown. The reveal stays closed if the date was set after it
+had already passed, and it isn't offered on lists made for someone else. The
+database function `get_gift_reveal()` enforces all of this; the page only
+explains it.
+
 ## Link autofill (`/api/unfurl?url=`)
 
 Signed-in users only, so it can't be used as an open proxy. In
@@ -167,7 +191,8 @@ npm run test:rls       # database privacy tests and unit tests (Vitest)
 npm run test:e2e       # browser tests at an iPhone size (Playwright)
 ```
 
-The browser tests build and start the app on port 3000 (or reuse a running
+`e2e/smoke.spec.ts` is the spec's main flow (create a list, invite, join,
+reserve, check My shopping). The browser tests build and start the app on port 3000 (or reuse a running
 server) and read sign-in emails from the local mail catcher.
 
 The RLS tests run against the local stack through the same REST and Realtime

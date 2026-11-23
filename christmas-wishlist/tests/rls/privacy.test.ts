@@ -574,3 +574,36 @@ describe("My shopping flags", () => {
     expect(byId[reordered.id]).toMatchObject({ item_edited: false, item_removed: false });
   });
 });
+
+describe("My shopping details", () => {
+  it("reports recipient_is_owner and whether a claim can still be changed", async () => {
+    const list = await createList(A, { title: "Leaving" });
+    const kept = await addItem(A, list.id, "Kept");
+    const gone = await addItem(A, list.id, "Gone");
+    await join(C, list.invite_token);
+    must(await claim(C, kept.id));
+    must(await claim(C, gone.id));
+    must(await A.client.from("items").update({ removed_at: new Date().toISOString() }).eq("id", gone.id));
+
+    type Row = { item_id: string; recipient_is_owner: boolean; can_change: boolean; recipient_name: string };
+    let rows = must(await C.client.rpc("my_shopping")) as Row[];
+    let byId = Object.fromEntries(rows.map((r) => [r.item_id, r]));
+    expect(byId[kept.id]).toMatchObject({ recipient_is_owner: true, can_change: true, recipient_name: "Alice" });
+    expect(byId[gone.id]).toMatchObject({ can_change: false });
+
+    // C leaves the list: the claim stays in My shopping but can't be changed,
+    // only deleted.
+    must(await C.client.from("list_members").delete().eq("list_id", list.id).eq("user_id", C.id));
+    rows = must(await C.client.rpc("my_shopping")) as Row[];
+    byId = Object.fromEntries(rows.map((r) => [r.item_id, r]));
+    expect(byId[kept.id]).toMatchObject({ can_change: false });
+    expect((await C.client.from("claims").update({ status: "purchased" }).eq("item_id", kept.id)).error).not.toBeNull();
+    const del = must(await C.client.from("claims").delete().eq("item_id", kept.id).select("id"));
+    expect(del).toHaveLength(1);
+
+    // Still only C's own rows: nothing of B's (C's own setup claim is fine).
+    const text = JSON.stringify(rows);
+    expect(text).not.toContain(B.id);
+    for (const id of claimIds.filter((_, i) => i !== 1)) expect(text).not.toContain(id);
+  });
+});

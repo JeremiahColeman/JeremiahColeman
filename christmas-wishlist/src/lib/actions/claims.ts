@@ -53,7 +53,7 @@ export async function createClaim(listId: string, itemId: string, formData: Form
 
 export async function updateClaim(listId: string, claimId: string, formData: FormData): Promise<ClaimResult> {
   if (!UUID.test(listId) || !UUID.test(claimId)) return { error: "Reservation not found." };
-  const update: { quantity?: number; status?: "reserved" | "purchased" } = {};
+  const update: { quantity?: number; status?: "reserved" | "purchased"; share_name_with_recipient?: boolean } = {};
   if (formData.has("quantity")) {
     const qty = quantity(formData.get("quantity"));
     if (!qty) return { error: "Pick how many." };
@@ -61,6 +61,8 @@ export async function updateClaim(listId: string, claimId: string, formData: For
   }
   const status = formData.get("status");
   if (status === "reserved" || status === "purchased") update.status = status;
+  if (formData.has("share_name")) update.share_name_with_recipient = formData.get("share_name") === "1";
+  if (!Object.keys(update).length) return { error: "Nothing to change." };
 
   const { supabase } = await client();
   const { data, error } = await supabase.from("claims").update(update).eq("id", claimId).select("id");

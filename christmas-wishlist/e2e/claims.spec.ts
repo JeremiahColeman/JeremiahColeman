@@ -96,7 +96,8 @@ test.describe("reserving gifts", () => {
     await card(bob, "Scarf").getByRole("button", { name: "Reserve Scarf" }).click();
     await expect(chip(page, "Scarf")).toHaveText("Reserved"); // live
     await expect(card(page, "Scarf")).toContainText("Someone already reserved this.");
-    await expect(page.getByRole("main")).not.toContainText("Bob");
+    // Bob is listed under "Who can see this list", but never next to an item.
+    await expect(page.getByRole("region", { name: "Items" })).not.toContainText(/Bob|Cara/);
 
     await card(page, "Socks").getByRole("button", { name: "Reserve Socks" }).click();
     await expect(card(page, "Socks").getByTestId("my-claim")).toHaveText("★ You reserved this");

@@ -284,6 +284,7 @@ export type Database = {
       my_shopping: {
         Args: Record<PropertyKey, never>;
         Returns: {
+          can_change: boolean;
           claim_id: string;
           claimed_at: string;
           currency: string;
@@ -299,6 +300,7 @@ export type Database = {
           price_cents: number;
           quantity: number;
           quantity_wanted: number;
+          recipient_is_owner: boolean;
           recipient_name: string;
           share_name_with_recipient: boolean;
           status: string;

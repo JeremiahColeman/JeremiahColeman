@@ -7,8 +7,10 @@ import { Card, Notice, PageTitle } from "@/components/ui";
 import { requestOrigin, requireProfile } from "@/lib/auth";
 import type { MyClaim, Totals } from "@/lib/claims";
 import { formatDate, recipientOf } from "@/lib/format";
+import { revealState } from "@/lib/reveal";
 import { createClient } from "@/lib/supabase/server";
 import { ListSettings } from "./list-settings";
+import { RevealCard } from "./reveal-card";
 import { AddItem, OwnerItem, RemovedItems } from "./owner-items";
 import { MembersCard, ShareCard } from "./sharing";
 
@@ -28,7 +30,7 @@ export default async function ListPage({ params, searchParams }: PageProps<"/lis
     supabase
       .from("lists")
       .select(
-        "id, title, description, event_date, recipient_is_owner, recipient_name, invite_token, owner_id, archived_at, owner:profiles!lists_owner_id_fkey(display_name)",
+        "id, title, description, event_date, event_date_set_at, recipient_is_owner, recipient_name, invite_token, owner_id, archived_at, owner:profiles!lists_owner_id_fkey(display_name)",
       )
       .eq("id", id)
       .maybeSingle(),
@@ -162,6 +164,7 @@ export default async function ListPage({ params, searchParams }: PageProps<"/lis
         ) : null}
 
         <RemovedItems listId={list.id} items={removed} />
+        <RevealCard listId={list.id} state={revealState(list)} />
         <ShareCard listId={list.id} title={list.title} inviteUrl={`${await requestOrigin()}/join/${list.invite_token}`} />
         <MembersCard listId={list.id} members={members} />
         <ListSettings list={list} />

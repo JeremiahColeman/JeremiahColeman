@@ -1,9 +1,12 @@
 import { devices, expect, type Browser, type Page } from "@playwright/test";
+import { execSync } from "node:child_process";
 import { randomUUID } from "node:crypto";
+import pg from "pg";
 
 const MAILPIT = "http://127.0.0.1:54324";
 
-export const newEmail = (name: string) => `${name.toLowerCase()}-${randomUUID().slice(0, 8)}@example.test`;
+export const newEmail = (name: string) =>
+  `${name.toLowerCase().replace(/[^a-z0-9]+/g, "-")}-${randomUUID().slice(0, 8)}@example.test`;
 
 type Mail = { link: string; code: string };
 
@@ -54,7 +57,10 @@ export async function newPage(browser: Browser) {
 /** Creates a list from My lists and waits for its page. Returns the invite link. */
 export async function createListAs(page: Page, title: string, opts: { forName?: string; date?: string } = {}) {
   await page.goto("/lists");
+  // Wait for the page (it streams in), then open the form if it's closed.
   const open = page.getByRole("button", { name: "+ Create a list" });
+  const form = page.getByRole("heading", { name: "New list" });
+  await expect(open.or(form)).toBeVisible();
   if (await open.isVisible()) await open.click();
   await page.getByLabel("List name").fill(title);
   if (opts.date) await page.getByLabel("Event date (optional)").fill(opts.date);
@@ -82,4 +88,36 @@ export async function addItemAs(
   if (opts.notes) await page.getByLabel("Notes (optional)").fill(opts.notes);
   await page.getByRole("button", { name: "Add to list" }).click();
   await expect(page.getByRole("heading", { name: title, level: 3 })).toBeVisible();
+}
+
+/** Local database URL from `supabase status` (tests only). */
+function dbUrl() {
+  if (process.env.SUPABASE_DB_URL) return process.env.SUPABASE_DB_URL;
+  const out = execSync("npx supabase status -o env", { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] });
+  return (process.env.SUPABASE_DB_URL = out.match(/^DB_URL="?(.*?)"?$/m)![1]);
+}
+
+/**
+ * Simulates time passing: sets a list's event date, and when it was set,
+ * directly in the local database (the app's trigger would stamp "now").
+ */
+export async function setEventDate(listId: string, eventDate: string, setAt: string) {
+  const db = new pg.Client({ connectionString: dbUrl() });
+  await db.connect();
+  try {
+    await db.query("begin");
+    await db.query("set local session_replication_role = replica");
+    await db.query("update public.lists set event_date = $2, event_date_set_at = $3 where id = $1", [listId, eventDate, setAt]);
+    await db.query("commit");
+  } finally {
+    await db.end();
+  }
+}
+
+export const listIdFrom = (page: Page) => page.url().match(/\/lists\/([0-9a-f-]{36})/)![1];
+
+export function daysFromToday(n: number) {
+  const d = new Date();
+  d.setUTCDate(d.getUTCDate() + n);
+  return d.toISOString().slice(0, 10);
 }
