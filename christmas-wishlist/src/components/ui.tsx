@@ -11,8 +11,13 @@ const variants = {
 };
 export type ButtonVariant = keyof typeof variants;
 
+const TEXT_SIZE = /(^|\s)text-(xs|sm|base|lg|xl|[2-9]xl)(\s|$)/;
+
 export function buttonClass(variant: ButtonVariant = "primary", extra = "") {
-  return `${base} ${variants[variant]} ${extra}`;
+  // Tailwind resolves conflicting classes by stylesheet order, not class
+  // order, so drop the default size when the caller passes one.
+  const b = TEXT_SIZE.test(extra) ? base.replace(" text-lg", "") : base;
+  return `${b} ${variants[variant]} ${extra}`;
 }
 
 export function Button({

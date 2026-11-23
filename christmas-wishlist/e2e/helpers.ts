@@ -50,3 +50,36 @@ export async function newPage(browser: Browser) {
   const context = await browser.newContext({ ...iPhone, baseURL: "http://localhost:3000" });
   return context.newPage();
 }
+
+/** Creates a list from My lists and waits for its page. Returns the invite link. */
+export async function createListAs(page: Page, title: string, opts: { forName?: string; date?: string } = {}) {
+  await page.goto("/lists");
+  const open = page.getByRole("button", { name: "+ Create a list" });
+  if (await open.isVisible()) await open.click();
+  await page.getByLabel("List name").fill(title);
+  if (opts.date) await page.getByLabel("Event date (optional)").fill(opts.date);
+  if (opts.forName) {
+    await page.getByLabel("This list is for someone else").check();
+    await page.getByLabel("Who is it for?").fill(opts.forName);
+  }
+  await page.getByRole("button", { name: "Create list" }).click();
+  await expect(page.getByRole("heading", { name: title, level: 1 })).toBeVisible();
+  return page.getByLabel("Invite link").inputValue();
+}
+
+/** Adds an item by typing (no link). Opens the add form if needed. */
+export async function addItemAs(
+  page: Page,
+  title: string,
+  opts: { price?: string; quantity?: number; priority?: "Really want" | "Would like" | "Nice to have"; notes?: string } = {},
+) {
+  const open = page.getByRole("button", { name: "+ Add an item" });
+  if (await open.isVisible()) await open.click();
+  await page.getByLabel("Name", { exact: true }).fill(title);
+  if (opts.price) await page.getByLabel("Price (optional)").fill(opts.price);
+  for (let q = 1; q < (opts.quantity ?? 1); q++) await page.getByRole("button", { name: "One more" }).click();
+  if (opts.priority) await page.getByText(opts.priority, { exact: true }).click();
+  if (opts.notes) await page.getByLabel("Notes (optional)").fill(opts.notes);
+  await page.getByRole("button", { name: "Add to list" }).click();
+  await expect(page.getByRole("heading", { name: title, level: 3 })).toBeVisible();
+}

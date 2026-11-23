@@ -8,7 +8,9 @@ export function SubmitButton({
   pendingText,
   variant,
   className = "w-full",
+  ariaLabel,
 }: {
+  ariaLabel?: string;
   children: React.ReactNode;
   pendingText?: string;
   variant?: ButtonVariant;
@@ -16,7 +18,7 @@ export function SubmitButton({
 }) {
   const { pending } = useFormStatus();
   return (
-    <Button type="submit" variant={variant} disabled={pending} aria-busy={pending} className={className}>
+    <Button type="submit" variant={variant} disabled={pending} aria-busy={pending} aria-label={ariaLabel} className={className}>
       {pending ? (pendingText ?? "Working…") : children}
     </Button>
   );

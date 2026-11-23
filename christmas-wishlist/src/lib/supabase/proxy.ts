@@ -38,6 +38,10 @@ export async function updateSession(request: NextRequest) {
   const { data } = await supabase.auth.getClaims();
   const signedIn = Boolean(data?.claims?.sub);
 
+  if (!signedIn && request.nextUrl.pathname.startsWith("/api/")) {
+    return NextResponse.json({ ok: false, message: "Sign in first." }, { status: 401 });
+  }
+
   if (!signedIn && !PUBLIC_PATHS.some((re) => re.test(request.nextUrl.pathname))) {
     const url = request.nextUrl.clone();
     url.pathname = "/sign-in";

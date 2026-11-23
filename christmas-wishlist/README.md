@@ -13,7 +13,7 @@ Auth, Realtime) through `@supabase/ssr`, hosted on Vercel.
 |---|---|---|
 | 1 | Scaffold, schema, RLS, triggers, functions, RLS tests | Done |
 | 2 | Auth, profiles, join flow | Done |
-| 3 | Owner list editor, link autofill | Not started |
+| 3 | Owner list editor, link autofill | Done |
 | 4 | Buyer view, claims, Realtime | Not started |
 | 5 | My shopping, gift reveal | Not started |
 | 6 | PWA polish, Vercel deploy | Not started |
@@ -85,6 +85,41 @@ These close leaks the spec didn't call out:
 - **Redirects after sign-in** go only to paths on this site, so an off-site
   `next` value is ignored.
 
+## List editor (owner)
+
+- Add items by typing, or paste a store link to fill in the name, picture,
+  and price. Autofill never overwrites anything you typed.
+- Set price and currency, how many you want, and how much you want it
+  ("Really want", "Would like", "Nice to have"), plus notes.
+- Edit, move up or down, and remove items. Removed items go to a "Removed
+  items" section where you can put them back. Items are never hard-deleted,
+  because a delete that failed on existing claims would reveal them.
+- Share card: copy or share the invite link, or make a new link (the old one
+  stops working; people who joined keep access).
+- See who joined, and remove someone.
+- Edit the list's name, description, date, or recipient; archive; or delete.
+- Owners never see claim information on their own lists.
+
+## Link autofill (`/api/unfurl?url=`)
+
+Signed-in users only, so it can't be used as an open proxy. In
+[`src/lib/unfurl/`](src/lib/unfurl):
+
+- Accepts only `http` and `https` on the standard ports, with no passwords in
+  the URL.
+- Blocks private, loopback, link-local, carrier-grade NAT, multicast, and
+  reserved addresses, including IPv4-mapped IPv6 and 6to4/NAT64 forms. The
+  check runs inside the socket's DNS lookup, so the address checked is the
+  address connected to (no DNS-rebinding gap). A host with any private record
+  is refused.
+- Follows at most 3 redirects, re-checking each one; stops after 5 seconds or
+  2 MB (measured after decompression, so a gzip bomb can't get around it).
+- Reads `og:title`, `og:image`, `product:price:amount`,
+  `product:price:currency`, and JSON-LD `Product` offers (including `@graph`,
+  `AggregateOffer`, and `priceSpecification`).
+- Always answers 200 with whatever it found, so the form falls back to manual
+  entry without an error screen.
+
 Signed-in pages render a static shell (nav and a loading placeholder) right
 away, then stream in the user's data. The server Supabase client calls
 `connection()`, so per-user data is never prerendered or cached on the server.
@@ -109,7 +144,7 @@ instead: `SUPABASE_INTERNAL_IMAGE_REGISTRY=docker.io npx supabase start`.
 
 ```bash
 npx supabase db reset  # optional: start from a clean database
-npm run test:rls       # database privacy tests (Vitest)
+npm run test:rls       # database privacy tests and unit tests (Vitest)
 npm run test:e2e       # browser tests at an iPhone size (Playwright)
 ```
 
