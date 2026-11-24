@@ -16,7 +16,7 @@ Auth, Realtime) through `@supabase/ssr`, hosted on Vercel.
 | 3 | Owner list editor, link autofill | Done |
 | 4 | Buyer view, claims, Realtime | Done |
 | 5 | My shopping, gift reveal | Done |
-| 6 | PWA polish, Vercel deploy | Not started |
+| 6 | PWA polish, Vercel deploy | App ready; deploy needs your accounts ([DEPLOY.md](DEPLOY.md)) |
 
 ## Privacy model
 
@@ -200,6 +200,24 @@ APIs the app uses. They read keys from `supabase status` at runtime, so no keys
 are committed. They use four users: owner A, buyers B and C, and outsider D. A
 direct Postgres connection is used only to simulate time passing for the gift
 reveal and to prove the overclaim lock blocks a concurrent transaction.
+
+## Installable app and security
+
+- **Add to home screen:** a web app manifest, an original gift-box icon (with a
+  maskable version for Android), and iPhone home-screen settings. Account has
+  step-by-step instructions for iPhone and Android.
+- **Offline:** a small service worker shows a self-contained "You're offline"
+  page when there's no connection. It never caches lists, items, reservations,
+  or any signed-in page, so nothing personal stays on a shared device.
+- **Security headers:** a Content-Security-Policy that allows connections only
+  to this site and the Supabase project, plus `frame-ancestors 'none'`,
+  `nosniff`, a strict referrer policy, and a permissions policy. Scripts use
+  `'unsafe-inline'` because signed-in pages use a prerendered static shell,
+  which nonces don't support (see the Next.js CSP guide).
+
+## Deploying
+
+Step-by-step instructions are in [DEPLOY.md](DEPLOY.md).
 
 ## Hosted Supabase settings for sign-in
 

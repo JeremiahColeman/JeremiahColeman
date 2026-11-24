@@ -4,7 +4,7 @@ import type { Database } from "@/lib/database.types";
 import { supabaseAnonKey, supabaseUrl } from "@/lib/env";
 
 /** Paths anyone can open while signed out. */
-const PUBLIC_PATHS = [/^\/$/, /^\/sign-in$/, /^\/auth\//, /^\/invite-invalid$/, /^\/offline$/];
+const PUBLIC_PATHS = [/^\/$/, /^\/sign-in$/, /^\/auth\//, /^\/invite-invalid$/];
 
 /**
  * Refreshes the Supabase session cookie on every request and sends signed-out

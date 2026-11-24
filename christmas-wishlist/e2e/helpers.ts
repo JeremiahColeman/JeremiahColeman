@@ -79,7 +79,10 @@ export async function addItemAs(
   title: string,
   opts: { price?: string; quantity?: number; priority?: "Really want" | "Would like" | "Nice to have"; notes?: string } = {},
 ) {
+  // Wait for the page (it streams in), then open the form if it's closed.
   const open = page.getByRole("button", { name: "+ Add an item" });
+  const form = page.getByRole("heading", { name: "Add an item" });
+  await expect(open.or(form)).toBeVisible();
   if (await open.isVisible()) await open.click();
   await page.getByLabel("Name", { exact: true }).fill(title);
   if (opts.price) await page.getByLabel("Price (optional)").fill(opts.price);
