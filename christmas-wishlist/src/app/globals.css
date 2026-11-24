@@ -1,0 +1,40 @@
+@import "tailwindcss";
+
+/* Warm, high-contrast palette. Light only: easier to read for everyone. */
+@theme {
+  --color-paper: #fbf7f0;
+  --color-card: #ffffff;
+  --color-ink: #1f2a24;
+  --color-muted: #55615a;
+  --color-line: #e4ddd0;
+  --color-pine: #1f5135;
+  --color-pine-dark: #163d28;
+  --color-pine-soft: #e3eee6;
+  --color-berry: #a8261f;
+  --color-berry-soft: #f8e4e1;
+  --color-gold: #8a5a00;
+  --color-gold-soft: #fbf0d6;
+
+  --font-sans: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-display: ui-serif, "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+}
+
+:root {
+  color-scheme: light;
+  -webkit-text-size-adjust: 100%;
+}
+
+html {
+  font-size: 112.5%; /* 18px base */
+}
+
+body {
+  background: var(--color-paper);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+}
+
+:focus-visible {
+  outline: 3px solid var(--color-pine);
+  outline-offset: 2px;
+}
